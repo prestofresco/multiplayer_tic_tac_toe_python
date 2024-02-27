@@ -1,3 +1,5 @@
+#This comment was made by Jeffrey Miller
+
 import tkinter
 import socket
 import sys
@@ -18,7 +20,7 @@ def establish_connection():
     # TODO
     client_socket = socket(socket.AF_INET, socket.SOCK_STREAM)
     
-    
+
 
 
 # ------------------ MAIN --------------------
