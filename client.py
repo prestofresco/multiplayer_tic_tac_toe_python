@@ -25,7 +25,15 @@ def establish_connection():
 
 # ------------------ MAIN --------------------
 def main():
-    print()
+    top = tkinter.Tk()
+
+    myLabel1 = tkinter.Label(top, text="Tic Tac Toe: A Game of Strategy")
+    myLabel2 = tkinter.Label(top, text="My Name is Jeff Miller")
+    myLabel1.grid(row=0,column=0)
+    myLabel2.grid(row=1,column=0)
+
+    top.mainloop()
+
     
 
 

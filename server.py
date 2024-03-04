@@ -2,16 +2,26 @@ import socket
 import sys
 import threading
 
+HOST = 'localhost'
+PORT = 6789
+
+server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+server.bind((HOST, PORT))
 
 def establish_connection():
-    # TODO
-    client_socket = socket(socket.AF_INET, socket.SOCK_STREAM)
+    client, address = server.accept()
+    print(f"Connected with {str(address)}")
 
 
 
 # ------------------ MAIN --------------------
 def main():
-    print()
+    
+    server.listen()
+
+    print(f"Server listening on {HOST}:{PORT}")
+
+    establish_connection()
     
 
 
