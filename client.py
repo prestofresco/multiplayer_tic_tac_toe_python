@@ -38,11 +38,40 @@ def establish_connection():
     global user
     user = User(username, role)
     user_message = {'username': user.username}
-    user_message = json.dumps(user_message)
-    client_socket.sendall(user_message.encode('utf-8'))
+    send_server_json(user_message)
     print("\nYou are connected to the chat room!")
     print(help_menu)
-    
+
+
+def send_server_json(json_msg):
+    json_msg = json.dumps(json_msg)
+    client_socket.sendall(json_msg.encode('utf-8'))
+
+
+def initiate_game_start():
+    while True:
+        message = input("")
+        if message.lower() == 'cancel':
+            cancel_msg = {'cancel': ""}
+            send_server_json(cancel_msg)
+            break
+        elif message.lower() == 'users':
+            users_msg = {'users': ""}
+            send_server_json(users_msg)
+        else:
+            username_msg = {'username': message}
+            send_server_json(username_msg)
+
+
+def handle_game_request():
+    message = input("")
+    if message.lower() == 'accept':
+        send_server_json({'gamerequest': 'accept'})
+    elif message.lower() == 'decline':
+        send_server_json({'gamerequest': 'decline'})
+    else:
+        send_server_json({'gamerequest': 'invalid'})
+
 
 def receive():
     while True:
@@ -52,6 +81,9 @@ def receive():
 
             if 'chat' in message:
                 print(message['chat'])
+            elif 'gamerequest' in message:
+                print(message['gamerequest'])
+                handle_game_request()
 
         except Exception as error:
             print("An error occurred!", error)
@@ -64,17 +96,21 @@ def write():
 
         if message.lower() == 'play':
             start_game_msg = {'startgame': user.username}
-            start_game_msg = json.dumps(start_game_msg) # serialized json
-            client_socket.sendall(start_game_msg.encode('utf-8'))
-        
+            send_server_json(start_game_msg)
+            initiate_game_start()
+
+
         elif message.lower() == 'help':
             print(help_menu)
+        
+        elif message.lower() == 'users':
+            users_msg = {'users': ""}
+            send_server_json(users_msg)
        
         else: # just a chat message
             message = f'{user.username}: {message}'
             chat_msg = {'chat': message}
-            chat_msg = json.dumps(chat_msg) # serialized json
-            client_socket.sendall(chat_msg.encode('utf-8'))
+            send_server_json(chat_msg)
 
 
 

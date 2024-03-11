@@ -8,8 +8,8 @@ HOST = '127.0.0.1'
 PORT = 5200
 server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
-clients = [] # array of connected clients
-users = [] # array of connected usernames
+clients = [] # list of dictionaries of each connected client {'username': name, 'client_socket': socket} , {} , ...
+users = [] # list of connected usernames
 
 class GameInstance:
     def __init__(self, user, tictactoe) -> None:
@@ -24,11 +24,62 @@ def establish_connection():
     print(f"Server is running on {HOST}:{PORT}")
 
 
+def remove_client(client, username):
+    user_to_remove = None
+    for user in clients:
+        if user['username'] == username:
+            user_to_remove = user
+
+    clients.remove(user_to_remove)
+    users.remove(username)
+
+
 def send_chat_all(message):
     for client in clients:
         chat_msg = {'chat': message}
         chat_msg = json.dumps(chat_msg) # serialized json
-        client.sendall(chat_msg.encode('utf-8'))
+        client['client_socket'].sendall(chat_msg.encode('utf-8'))
+
+
+def send_single_client_json(client, message):
+    message = json.dumps(message) # serialized json
+    client.sendall(message.encode('utf-8'))
+
+
+def get_username_by_client(client):
+    for user in clients:
+        if user['client_socket'] == client:
+            return user['username']
+        
+
+def get_client_by_username(username):
+    for user in clients:
+        if user['username'] == username:
+            return user['client_socket']
+
+
+def display_active_users(client):
+    all_users_msg = {'chat': users}
+    send_single_client_json(client, all_users_msg)
+
+
+def send_user_game_request(client, user_who_requested):
+    send_single_client_json(client, {'gamerequest': f"\n'{user_who_requested}' would like to start a game with you!\nType 'accept' or 'decline'"})
+    client_who_requested = get_client_by_username(user_who_requested)
+
+    while True:
+        message = client.recv(4096).decode('utf-8')
+        message = json.loads(message)
+        if message['gamerequest'].lower() == 'accept':
+            start_gameplay(client_who_requested, client)
+            break
+        elif message['gamerequest'].lower() == 'decline':
+            send_single_client_json(client_who_requested, {'chat': f"'{get_username_by_client(client)}' declined your request to start the game.\n"})
+            break
+        else:
+            send_single_client_json(client, {'chat': "Command not recognized."})
+            send_single_client_json(client, {'gamerequest': f"'{user_who_requested}' is waiting to start a game with you!\nType 'accept' or 'decline'"})
+            continue
 
 
 # handle client interactions
@@ -41,19 +92,53 @@ def handle_client(client):
                 send_chat_all(message['chat'])
 
             elif 'startgame' in message:
-                start_msg = {'chat': "game start initiated! (not implemented yet)"}
-                start_msg = json.dumps(start_msg) # serialized json
-                client.sendall(start_msg.encode('utf-8'))
+                handle_game_start(client)
+
+            elif 'users' in message:
+                display_active_users(client)
                 
 
-        except:
-            index = clients.index(client)
-            clients.remove(client)
-            client.close()
-            username = users[index]
-            send_chat_all(f"* {username} disconnected! *")
-            users.remove(username)
+        except: # exception or disconnect, remove the client and close connection.
+            username = get_username_by_client(client)
+            remove_client(client, username)
+            send_chat_all(f"* '{username}' disconnected! *")
             break
+
+
+def handle_game_start(client):
+    game_instructions = "\nGame waiting to start! Please type the username of the player you would like to play with\n"
+    game_instructions += "Type 'users' to see a list of active users, or 'cancel' to go back to the chatroom.\n"
+    start_msg = {'chat': game_instructions}
+    send_single_client_json(client, start_msg)
+
+    while True:
+        message = client.recv(4096).decode('utf-8')
+        message = json.loads(message)
+
+        if 'cancel' in message:
+            send_single_client_json(client, {'chat': "\n* Cancelling game... You are now back in the chatrom. *\n"})
+            break
+        elif 'users' in message:
+            display_active_users(client)
+        elif 'username' in message:
+            user_found = False
+            for user in clients:
+                if message['username'].lower() == user['username'].lower():
+                    user_found = True # username match found
+                    send_single_client_json(client, {'chat': f"\nUser: '{message['username']}' found!\nWaiting for them to accept your request...\n"})
+                    send_user_game_request(user['client_socket'], get_username_by_client(client)) # Send the found user a request to start game here
+
+            if user_found == False:
+                send_single_client_json(client, {'chat': f"\nUser: '{message['username']}' was not found.\nPlease try again, or type 'cancel' to go back to the chatroom.\n"})
+                continue
+
+        else: # client option didn't match, send start game help message again.
+            send_single_client_json(client, start_msg)
+
+
+def start_gameplay(client1, client2):
+    send_single_client_json(client1, {'chat': f"Game with '{get_username_by_client(client2)}' initiated! (not implemented yet)\n"})
+    send_single_client_json(client2, {'chat': f"Game with '{get_username_by_client(client1)}' initiated! (not implemented yet)\n"})
 
 
 def receive_new_client():
@@ -65,10 +150,10 @@ def receive_new_client():
         username_response = client.recv(4096).decode('utf-8')
         username_response = json.loads(username_response)
         users.append(username_response['username'])
-        clients.append(client)
+        clients.append({'username': username_response['username'], 'client_socket': client})
 
         print(f"New client connected! Username: {username_response['username']}!")
-        send_chat_all(f"'{username_response['username']}' joined the server!")
+        send_chat_all(f"* '{username_response['username']}' joined the server! *")
 
         # start the thread to handle the client interactions
         threading.Thread(target=handle_client, args=(client,)).start()
