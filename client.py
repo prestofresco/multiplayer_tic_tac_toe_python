@@ -17,6 +17,10 @@ help_menu += "If you would like to start a game with another player type: 'play'
 help_menu += "To display the help menu type: 'help' in chat.\n"
 help_menu += "To display active users type: 'users' in chat.\n" # TODO
 help_menu += "------------------------------------------------------------------------------------\n"
+# declare the threads globally for access in methods
+write_thread = None
+receive_thread = None
+
 
 class User:
     def __init__(self, username, player_role) -> None:
@@ -35,7 +39,6 @@ def establish_connection():
     username = input("Choose your username: ")
     # role = input("choose your game piece ('X' or 'O')")
     role = ""
-    global user
     user = User(username, role)
     user_message = {'username': user.username}
     send_server_json(user_message)
@@ -61,16 +64,7 @@ def initiate_game_start():
         else:
             username_msg = {'username': message}
             send_server_json(username_msg)
-
-
-def handle_game_request():
-    message = input("")
-    if message.lower() == 'accept':
-        send_server_json({'gamerequest': 'accept'})
-    elif message.lower() == 'decline':
-        send_server_json({'gamerequest': 'decline'})
-    else:
-        send_server_json({'gamerequest': 'invalid'})
+            break
 
 
 def receive():
@@ -83,30 +77,31 @@ def receive():
                 print(message['chat'])
             elif 'gamerequest' in message:
                 print(message['gamerequest'])
-                handle_game_request()
 
         except Exception as error:
             print("An error occurred!", error)
             client_socket.close()
             break
 
+
 def write():
     while True:
         message = input("") # get chat message input
 
         if message.lower() == 'play':
-            start_game_msg = {'startgame': user.username}
-            send_server_json(start_game_msg)
+            send_server_json({'startgame': user.username})
             initiate_game_start()
-
 
         elif message.lower() == 'help':
             print(help_menu)
         
         elif message.lower() == 'users':
-            users_msg = {'users': ""}
-            send_server_json(users_msg)
-       
+            send_server_json({'users': ""})
+        
+        elif message.lower() == 'accept' or message.lower() == 'decline':
+            send_server_json({'gameresponse': message})
+
+
         else: # just a chat message
             message = f'{user.username}: {message}'
             chat_msg = {'chat': message}
@@ -115,12 +110,14 @@ def write():
 
 
 
-
 # ------------------ MAIN --------------------
 def main():
     establish_connection()
-    threading.Thread(target=receive).start() # start the receive thread
-    threading.Thread(target=write).start() # start the write thread
+    global write_thread, receive_thread
+    receive_thread = threading.Thread(target=receive)
+    write_thread = threading.Thread(target=write)
+    receive_thread.start() # start the receive thread
+    write_thread.start() # start the write thread
 
 
 if __name__ == "__main__":
