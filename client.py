@@ -34,16 +34,23 @@ class TicTacToe:
 
 
 def establish_connection():
+    username_success = False
     client_socket.connect((HOST, PORT))
-    global user
-    username = input("Choose your username: ")
-    # role = input("choose your game piece ('X' or 'O')")
-    role = ""
-    user = User(username, role)
-    user_message = {'username': user.username}
-    send_server_json(user_message)
-    print("\nYou are connected to the chat room!")
-    print(help_menu)
+
+    while not username_success:
+        username = input("Choose your username: ")
+        user_message = {'username': username}
+        send_server_json(user_message) # send username choice
+        username_response = client_socket.recv(4096).decode('utf-8')
+        username_response = json.loads(username_response)
+        if 'success' in username_response:
+            global user
+            username_success = True
+            user = User(username, "")
+            print("\nYou are connected to the chat room!")
+            print(help_menu)
+        else:
+            print(f"** Username: '{username}' is invalid or already taken. Please choose another username.")
 
 
 def send_server_json(json_msg):

@@ -60,7 +60,7 @@ def get_client_by_username(username):
 
 
 def display_active_users(client):
-    users_msg = f"\nUsers Online: \n{users}"
+    users_msg = f"\nUsers online: \n-------------------------------------------------------------------------------------\n{users}\n"
     all_users_msg = {'chat': users_msg}
     send_single_client_json(client, all_users_msg)
 
@@ -109,15 +109,17 @@ def handle_game_request_response(message, client):
     clients = find_game_request(client) # find the client pair for the pending game request
 
     if message['gameresponse'].lower() == 'accept':
-        if clients:
+        if clients and clients[1] == client: # if client pair found, and this client is the one who was requested by another player
+            pending_game_requests.remove(clients)
             start_gameplay(clients[0], clients[1])
         else: # there was no pending game request for this client
             send_single_client_json(client, {'chat': "Sorry, you have no pending game requests. Type 'play' to begin a game, or 'help' for help menu."})
     
     elif message['gameresponse'].lower() == 'decline':
-        if clients:
+        if clients and clients[1] == client: # if client pair found, and this client is the one who was requested by another player
             pending_game_requests.remove(clients)
             send_single_client_json(clients[0], {'chat': f"\n* '{get_username_by_client(clients[1])}' declined your request to start the game. *\n"})
+            send_single_client_json(clients[1], {'chat': f"\n* you successfully declined the game request from '{get_username_by_client(clients[0])}' *\n"})
         else:
             send_single_client_json(client, {'chat': "Sorry, you have no pending game requests. Type 'play' to begin a game, or 'help' for help menu."})
 
@@ -138,18 +140,34 @@ def receive_new_client():
     while True:
         client, address = server_socket.accept()
         print(f"New connection with {str(address)}")
+        username_verified = False
 
-        # handle the new user's username choice
-        username_response = client.recv(4096).decode('utf-8')
-        username_response = json.loads(username_response)
-        users.append(username_response['username'])
-        clients.append({'username': username_response['username'], 'client_socket': client})
+        while not username_verified:
+            # handle the new user's username choice
+            username_response = client.recv(4096).decode('utf-8')
+            username_response = json.loads(username_response)
 
-        print(f"New client connected! Username: {username_response['username']}!")
-        send_chat_all(f"* '{username_response['username']}' joined the server! *")
+            if (verify_username(username_response['username'])):
+                username_verified = True
+                users.append(username_response['username'])
+                send_single_client_json(client, {'success': ""})
+                clients.append({'username': username_response['username'], 'client_socket': client})
+                print(f"New client connected! Username: {username_response['username']}!")
+                # start a thread to handle the client interactions
+                threading.Thread(target=handle_client, args=(client,)).start()
+                send_chat_all(f"* '{username_response['username']}' joined the server! *")
+            else:
+                send_single_client_json(client, {'fail': ""})
 
-        # start a thread to handle the client interactions
-        threading.Thread(target=handle_client, args=(client,)).start()
+
+
+def verify_username(username):
+    if not users: 
+        return True
+    else:
+        if username in users:
+            return False
+        return True
 
 
 # handle client interactions
