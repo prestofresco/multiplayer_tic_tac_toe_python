@@ -11,12 +11,12 @@ PORT = 5200
 
 client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 user = None
-help_menu = "\n--------------------------------- HELP MENU ----------------------------------------\n"
+help_menu = "\n--------------------------------- HELP MENU -----------------------------------------\n"
 help_menu += "Type a message to chat with other players.\n"
 help_menu += "If you would like to start a game with another player type: 'play' in chat.\n"
 help_menu += "To display the help menu type: 'help' in chat.\n"
 help_menu += "To display active users type: 'users' in chat.\n" # TODO
-help_menu += "------------------------------------------------------------------------------------\n"
+help_menu += "-------------------------------------------------------------------------------------\n"
 # declare the threads globally for access in methods
 write_thread = None
 receive_thread = None

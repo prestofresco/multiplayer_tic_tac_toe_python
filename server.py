@@ -60,7 +60,8 @@ def get_client_by_username(username):
 
 
 def display_active_users(client):
-    users_msg = f"\nUsers online: \n-------------------------------------------------------------------------------------\n{users}\n"
+    users_msg = f"\n** Users online: ({len(users)}) ** \n-------------------------------------------------------------------------------------\n{users}\n"
+    users_msg += "-------------------------------------------------------------------------------------\n"
     all_users_msg = {'chat': users_msg}
     send_single_client_json(client, all_users_msg)
 
@@ -92,7 +93,8 @@ def handle_game_start(client):
         elif 'username' in message:
             user_found = False
             for user in clients:
-                if message['username'].lower() == user['username'].lower():
+                # if we found a matching username in active users, and the user is not the same as the requester
+                if message['username'].lower() == user['username'].lower() and message['username'].lower() != get_username_by_client(client):
                     user_found = True # username match found
                     send_single_client_json(client, {'chat': f"\nUser: '{message['username']}' found!\nWaiting for them to accept your request...\n"})
                     send_user_game_request(user['client_socket'], get_username_by_client(client)) # Send the found user a request to start game here
