@@ -2,7 +2,7 @@ import socket
 import sys
 import threading
 import json
-from client import User, TicTacToe
+from tic_tac_toe import TicTacToe
 
 HOST = '127.0.0.1'
 PORT = 5200
@@ -11,20 +11,21 @@ server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 clients = [] # list of dictionaries of each connected client {'username': name, 'client_socket': socket} , {} , ...
 users = [] # list of connected usernames
 pending_game_requests = [] # list of pending game request socket pairs. [ [client_who_requested_game, client2], [...], ...]
+clients_in_game = [] # list of clients currently playing a game. [ [client1, client2], [...], ...]
 
-class GameInstance:
-    def __init__(self, user, tictactoe) -> None:
-        self.users = []
-        self.tictactoe = TicTacToe()
+# class GameInstance:
+#     def __init__(self, client1, client2, tictactoe) -> None:
+#         self.game_clients = [client1, client2]
+#         self.tictactoe = TicTacToe()
 
 
+# initial socket connection and listening
 def establish_connection():
-    # TODO
     server_socket.bind((HOST, PORT))
     server_socket.listen()
     print(f"Server is running on {HOST}:{PORT}")
 
-
+# remove client from the online directories
 def remove_client(client, username):
     user_to_remove = None
     for user in clients:
@@ -34,31 +35,31 @@ def remove_client(client, username):
     clients.remove(user_to_remove)
     users.remove(username)
 
-
+# send a chat message to all online users
 def send_chat_all(message):
     for client in clients:
         chat_msg = {'chat': message}
         chat_msg = json.dumps(chat_msg) # serialized json
         client['client_socket'].sendall(chat_msg.encode('utf-8'))
 
-
+# send a json object to a single client
 def send_single_client_json(client, message):
     message = json.dumps(message) # serialized json
     client.sendall(message.encode('utf-8'))
 
-
+# get a username from a client's socket
 def get_username_by_client(client):
     for user in clients:
         if user['client_socket'] == client:
             return user['username']
         
-
+# get a client's socket from their username
 def get_client_by_username(username):
     for user in clients:
         if user['username'] == username:
             return user['client_socket']
 
-
+# Displays all active users. This is sent to a single client. 
 def display_active_users(client):
     users_msg = f"\n** Users online: ({len(users)}) ** \n-------------------------------------------------------------------------------------\n{users}\n"
     users_msg += "-------------------------------------------------------------------------------------\n"
@@ -106,13 +107,14 @@ def handle_game_start(client):
             else: # found user and sent request already
                 break
 
-
+# logic for handling a user's response to a game request.
 def handle_game_request_response(message, client):
     clients = find_game_request(client) # find the client pair for the pending game request
 
     if message['gameresponse'].lower() == 'accept':
         if clients and clients[1] == client: # if client pair found, and this client is the one who was requested by another player
             pending_game_requests.remove(clients)
+            # start the game between the two clients
             start_gameplay(clients[0], clients[1])
         else: # there was no pending game request for this client
             send_single_client_json(client, {'chat': "Sorry, you have no pending game requests. Type 'play' to begin a game, or 'help' for help menu."})
@@ -126,9 +128,15 @@ def handle_game_request_response(message, client):
             send_single_client_json(client, {'chat': "Sorry, you have no pending game requests. Type 'play' to begin a game, or 'help' for help menu."})
 
 
+# starts the game between two clients
 def start_gameplay(client1, client2):
-    send_single_client_json(client1, {'chat': f"Game with '{get_username_by_client(client2)}' initiated! (not implemented yet)\n"})
-    send_single_client_json(client2, {'chat': f"Game with '{get_username_by_client(client1)}' initiated! (not implemented yet)\n"})
+    send_single_client_json(client1, {'chat': f"Game with '{get_username_by_client(client2)}' starting! \n"})
+    send_single_client_json(client2, {'chat': f"Game with '{get_username_by_client(client1)}' starting! \n"})
+
+    new_game = TicTacToe(client1, get_username_by_client(client1), client2, get_username_by_client(client2))
+    # new_game.print_game_move_menu()
+    new_game.print_game_board()
+
 
 
 def find_game_request(client):
