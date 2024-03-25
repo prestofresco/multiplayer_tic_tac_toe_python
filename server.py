@@ -181,12 +181,18 @@ def handle_game_move(client, move):
 
         if client == curr_client_turn:
             # it is their game move, so process it.
+            # TODO: check for valid game move
             print(move)
             move = move['game_move'].split(',')
             print('the move: ', move)
             game.move_count += 1 # increment the turn 
             # send updated game boards.
             send_gameroom_chat(client, {'chat': f"\n'{get_username_by_client(curr_client_turn)}' played: {move}\n{game.get_game_board()}"})
+            # get the next client who's turn it is to play, and send them the game move menu.
+            time.sleep(0.2)
+            next_client_turn = curr_client_turn = game.get_client_by_turn()
+            send_single_client_json(curr_client_turn, {'chat': game.get_game_move_menu()})
+
         else:
             # TODO: just send as chat
             print("not their turn!!")
