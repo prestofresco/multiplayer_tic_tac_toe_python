@@ -99,7 +99,6 @@ def write():
         message = input("") # get chat message input
 
         if (client_playing_game): # if client is playing a game, we process the game moves
-            print('in client game loop!')
             send_server_json({'game_move': message})
             continue
 

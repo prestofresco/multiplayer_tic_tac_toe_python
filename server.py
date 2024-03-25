@@ -12,7 +12,7 @@ server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 clients = [] # list of dictionaries of each connected client {'username': name, 'client_socket': socket} , {} , ...
 users = [] # list of connected usernames
 pending_game_requests = [] # list of pending game request socket pairs. [ [client_who_requested_game, client2], [...], ...]
-clients_in_game = [] # list of clients currently playing a game. [ [client1, client2], [...], ...]
+client_games = [] # list of clients currently playing a game. [ [client1, client2, tictactoe_game_obj], [...], ...]
 
 # class GameInstance:
 #     def __init__(self, client1, client2, tictactoe) -> None:
@@ -51,6 +51,14 @@ def send_single_client_json(client, message):
     except:
         print("json error at message: ", message)
 
+# send a message to both the clients in a gameroom
+def send_gameroom_chat(client, message):
+    for gameroom in client_games:
+        if client in gameroom:
+            # found the gameroom, so send both clients in that room the msg.
+            send_single_client_json(gameroom[0], message)
+            send_single_client_json(gameroom[1], message)
+
 # get a username from a client's socket
 def get_username_by_client(client):
     for user in clients:
@@ -62,6 +70,11 @@ def get_client_by_username(username):
     for user in clients:
         if user['username'] == username:
             return user['client_socket']
+        
+def get_active_game_by_client(client):
+    for gameroom in client_games:
+        if client in gameroom:
+            return gameroom[2] # return the TicTacToe game object
 
 # Displays all active users. This is sent to a single client. 
 def display_active_users(client):
@@ -141,31 +154,43 @@ def start_gameplay(client1, client2):
     send_single_client_json(client2, {'game_started': ""})
     time.sleep(0.2)
     # create the new game instance
-    new_game = TicTacToe(client1, get_username_by_client(client1), client2, get_username_by_client(client2))
-    # notify them of game starting, and print game board
-    send_single_client_json(client1, {'chat': f"\nGame with '{get_username_by_client(client2)}' starting! \n{new_game.get_game_board()}"})
-    send_single_client_json(client2, {'chat': f"\nGame with '{get_username_by_client(client1)}' starting! \n{new_game.get_game_board()}"})
+    this_game = TicTacToe(client1, get_username_by_client(client1), client2, get_username_by_client(client2))
+    # TODO: remove clients from chatroom and move them to their own game room
+    # remove_client(client1)
+    # remove_client(client2)
+    client_games.append([client1, client2, this_game])
 
-    # display the empty game board to both clients
+    # notify them of game starting, and print game board
+    send_single_client_json(client1, {'chat': f"\nGame with '{get_username_by_client(client2)}' starting! \n{this_game.get_game_board()}"})
+    send_single_client_json(client2, {'chat': f"\nGame with '{get_username_by_client(client1)}' starting! \n{this_game.get_game_board()}"})
+
     print(f"** Game started between '{get_username_by_client(client1)}', '{get_username_by_client(client2)}'!")
 
-    # loop while there is not a winner
-    while not new_game.check_winner():
-        curr_client_turn = new_game.get_client_by_turn()
-        print(get_username_by_client(curr_client_turn), "turn", "count:", new_game.move_count)
+    curr_client_turn = this_game.get_client_by_turn()
+    # send the player who goes first the game move menu.
+    time.sleep(0.2)
+    send_single_client_json(curr_client_turn, {'chat': this_game.get_game_move_menu()})
 
-        time.sleep(0.2)
-        send_single_client_json(curr_client_turn, {'chat': new_game.get_game_move_menu()})
-        move = curr_client_turn.recv(4096).decode('utf-8')
-        move = json.loads(move)
-        move = move['game_move'].split(',')
-        print('the move: ', move)
-        new_game.move_count += 1 # increment the turn 
-        # send updated game boards.
-        send_single_client_json(client1, {'chat': f"\n'{get_username_by_client(curr_client_turn)}' played: {move}\n{new_game.get_game_board()}"})
-        send_single_client_json(client2, {'chat': f"\n'{get_username_by_client(curr_client_turn)}' played: {move}\n{new_game.get_game_board()}"})
-        # time.sleep(0.2)
 
+
+def handle_game_move(client, move):
+    game = get_active_game_by_client(client)
+    if not game.check_winner():
+        curr_client_turn = game.get_client_by_turn()
+        print(get_username_by_client(curr_client_turn), "turn", "count:", game.move_count)
+
+        if client == curr_client_turn:
+            # it is their game move, so process it.
+            print(move)
+            move = move['game_move'].split(',')
+            print('the move: ', move)
+            game.move_count += 1 # increment the turn 
+            # send updated game boards.
+            send_gameroom_chat(client, {'chat': f"\n'{get_username_by_client(curr_client_turn)}' played: {move}\n{game.get_game_board()}"})
+        else:
+            # TODO: just send as chat
+            print("not their turn!!")
+            pass
 
 
 
@@ -230,6 +255,9 @@ def handle_client(client):
 
             elif 'gameresponse' in message:
                 handle_game_request_response(message, client)
+
+            elif 'game_move' in message:
+                handle_game_move(client, message)
                 
 
         except: # exception or disconnect, remove the client and close connection.
