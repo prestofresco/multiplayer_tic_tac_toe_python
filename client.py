@@ -19,6 +19,8 @@ help_menu += "------------------------------------------------------------------
 write_thread = None
 receive_thread = None
 
+client_playing_game = False
+
 
 class User:
     def __init__(self, username, player_role) -> None:
@@ -82,9 +84,12 @@ def receive():
                 print(message['chat'])
             elif 'gamerequest' in message:
                 print(message['gamerequest'])
+            elif 'game_started' in message:
+                global client_playing_game
+                client_playing_game = True
 
         except Exception as error:
-            print("An error occurred!", error)
+            print("An error occurred!", error, message)
             client_socket.close()
             break
 
@@ -92,6 +97,11 @@ def receive():
 def write():
     while True:
         message = input("") # get chat message input
+
+        if (client_playing_game): # if client is playing a game, we process the game moves
+            print('in client game loop!')
+            send_server_json({'game_move': message})
+            continue
 
         if message.lower() == 'play':
             send_server_json({'startgame': user.username})
