@@ -84,9 +84,11 @@ def receive():
                 print(message['chat'])
             elif 'gamerequest' in message:
                 print(message['gamerequest'])
-            elif 'game_started' in message:
+            if 'game_started' in message:
                 global client_playing_game
                 client_playing_game = True
+            if 'game_finished' in message:
+                client_playing_game = False
 
         except Exception as error:
             print("An error occurred!", error, message)

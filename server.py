@@ -182,21 +182,34 @@ def handle_game_move(client, move):
         if client == curr_client_turn:
             # it is their game move, so process it.
             # TODO: check for valid game move
-            print(move)
-            move = move['game_move'].split(',')
-            print('the move: ', move)
-            game.move_count += 1 # increment the turn 
-            # send updated game boards.
-            send_gameroom_chat(client, {'chat': f"\n'{get_username_by_client(curr_client_turn)}' played: {move}\n{game.get_game_board()}"})
-            # get the next client who's turn it is to play, and send them the game move menu.
-            time.sleep(0.2)
-            next_client_turn = curr_client_turn = game.get_client_by_turn()
-            send_single_client_json(curr_client_turn, {'chat': game.get_game_move_menu()})
+            move = move['game_move']
+            # check for validity of moce
+            if game.check_valid_move(move):
+                game.add_move(move, client) # add the move
+                game.move_count += 1 # increment the turn 
+                # send updated game boards.
+                send_gameroom_chat(client, {'chat': f"\n'{get_username_by_client(curr_client_turn)}' played: {move}\n{game.get_game_board()}"})
+                time.sleep(0.2)
+                # check for win now
+                if game.check_winner():
+                    # send the clients game finished indicator, and a winner message.
+                    send_gameroom_chat(client, {'game_finished': "", 'chat': f"* Game over! winner: {game.winner} *\n"})
+                else: # no winner yet
+                    # get the next client who's turn it is to play, and send them the game move menu.
+                    next_client_turn = game.get_client_by_turn()
+                    send_single_client_json(next_client_turn, {'chat': game.get_game_move_menu()})
+
+            else: # not a valid move
+                send_single_client_json(client, {'chat': "** Not a valid game move. Please try again.\n"})
 
         else:
             # TODO: just send as chat
             print("not their turn!!")
             pass
+    
+    else: # found a winner
+         # send the clients game finished indicator, and a winner message.
+        send_gameroom_chat(client, {'game_finished': "", 'chat': f"* Game over! winner: {game.winner} *\n"})
 
 
 
