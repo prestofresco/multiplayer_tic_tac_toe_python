@@ -10,9 +10,11 @@ class TicTacToe:
         self.turn = 'X'
         self.move_count = 0
         self.winner = ""
+        self.draw = False # boolean for if there is a draw, no winner
 
     def get_game_move_menu(self):
-        help_menu = "--------------------------------- YOUR TURN -----------------------------------------\n"
+        help_menu = f"--------------------------------- YOUR TURN ({self.turn}) -----------------------------------------\n"
+        help_menu += f"You are player: '{self.turn}'\n"
         help_menu += "Enter the coordinates of the move you would like to make.\n"
         help_menu += "Format: 'row, column'\n"
         help_menu += "Example: '1,2'\n"
@@ -86,15 +88,29 @@ class TicTacToe:
         if self.gameboard[0][2] == self.gameboard[1][1] == self.gameboard[2][0] != " ": # check second diagonal
             self.winner = self.gameboard[0][2]
             return True # found a win
+        # check for a draw
+        if self.move_count == 8:
+            self.draw = True
+            return True # found a draw
         
         return False # no wins found
 
-
-    def play_game(self):
-        pass
-
+    # checks for correct move input, returns boolean
     def check_valid_move(self, move):
         move = move.split(',')
+        if len(move) != 2: # check correct format
+            return False
+        # check that the args are both valid integers
+        # we attempt to cast them, and return false on failure
+        try:
+            move1 = int(move[0])
+            move2 = int(move[1])
+        except:
+            return False
+        # check if any of the moves are out of bounds of the game grid
+        if ((move1 > 2) or (move1 < 0)) or ((move2 > 2) or (move2 < 0)):
+            return False
+        # now check for empty spot
         return self.gameboard[int(move[0])][int(move[1])] == " " # returns true if this spot is empty
 
     def add_move(self, move, client):

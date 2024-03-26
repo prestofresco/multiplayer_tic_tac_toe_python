@@ -152,7 +152,7 @@ def start_gameplay(client1, client2):
     # send clients the game started message
     send_single_client_json(client1, {'game_started': ""})
     send_single_client_json(client2, {'game_started': ""})
-    time.sleep(0.2)
+    time.sleep(0.1)
     # create the new game instance
     this_game = TicTacToe(client1, get_username_by_client(client1), client2, get_username_by_client(client2))
     # TODO: remove clients from chatroom and move them to their own game room
@@ -168,7 +168,7 @@ def start_gameplay(client1, client2):
 
     curr_client_turn = this_game.get_client_by_turn()
     # send the player who goes first the game move menu.
-    time.sleep(0.2)
+    time.sleep(0.1)
     send_single_client_json(curr_client_turn, {'chat': this_game.get_game_move_menu()})
 
 
@@ -189,7 +189,7 @@ def handle_game_move(client, move):
                 game.move_count += 1 # increment the turn 
                 # send updated game boards.
                 send_gameroom_chat(client, {'chat': f"\n'{get_username_by_client(curr_client_turn)}' played: {move}\n{game.get_game_board()}"})
-                time.sleep(0.2)
+                time.sleep(0.1)
                 # check for win now
                 if game.check_winner():
                     # send the clients game finished indicator, and a winner message.
@@ -203,9 +203,10 @@ def handle_game_move(client, move):
                 send_single_client_json(client, {'chat': "** Not a valid game move. Please try again.\n"})
 
         else:
-            # TODO: just send as chat
-            print("not their turn!!")
-            pass
+            # it is not their turn, so send their message as a chat to the two players. 
+            send_single_client_json(client, {'chat': "* Waiting for the other player to make their move"})
+            time.sleep(0.05)
+            send_gameroom_chat(client, {'chat': f"{get_username_by_client(client)}: {move['game_move']}"})
     
     else: # found a winner
          # send the clients game finished indicator, and a winner message.
