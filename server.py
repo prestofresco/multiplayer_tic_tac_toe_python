@@ -14,11 +14,6 @@ users = [] # list of connected usernames
 pending_game_requests = [] # list of pending game request socket pairs. [ [client_who_requested_game, client2], [...], ...]
 client_games = [] # list of clients currently playing a game. [ [client1, client2, tictactoe_game_obj], [...], ...]
 
-# class GameInstance:
-#     def __init__(self, client1, client2, tictactoe) -> None:
-#         self.game_clients = [client1, client2]
-#         self.tictactoe = TicTacToe()
-
 
 # initial socket connection and listening
 def establish_connection():
@@ -180,10 +175,9 @@ def handle_game_move(client, move):
         print(get_username_by_client(curr_client_turn), "turn", "count:", game.move_count)
 
         if client == curr_client_turn:
-            # it is their game move, so process it.
-            # TODO: check for valid game move
+            # it is their turn, so process the move.
             move = move['game_move']
-            # check for validity of moce
+            # check for validity of move
             if game.check_valid_move(move):
                 game.add_move(move, client) # add the move
                 game.move_count += 1 # increment the turn 
@@ -193,14 +187,17 @@ def handle_game_move(client, move):
                 # check for win now
                 if game.check_winner():
                     # send the clients game finished indicator, and a winner message.
-                    send_gameroom_chat(client, {'game_finished': "", 'chat': f"* Game over! winner: {game.winner} *\n"})
+                    if (game.is_draw()): # check for draw
+                        send_gameroom_chat(client, {'game_finished': "", 'chat': f"* Game over! It was a draw!! *\n"})
+                    else:
+                        send_gameroom_chat(client, {'game_finished': "", 'chat': f"* Game over! winner: {game.winner} *\n"})
                 else: # no winner yet
                     # get the next client who's turn it is to play, and send them the game move menu.
                     next_client_turn = game.get_client_by_turn()
                     send_single_client_json(next_client_turn, {'chat': game.get_game_move_menu()})
 
             else: # not a valid move
-                send_single_client_json(client, {'chat': "** Not a valid game move. Please try again.\n"})
+                send_single_client_json(client, {'chat': "** Not a valid game move. Please try again."})
 
         else:
             # it is not their turn, so send their message as a chat to the two players. 
@@ -210,7 +207,10 @@ def handle_game_move(client, move):
     
     else: # found a winner
          # send the clients game finished indicator, and a winner message.
-        send_gameroom_chat(client, {'game_finished': "", 'chat': f"* Game over! winner: {game.winner} *\n"})
+        if (game.is_draw()): # check for draw
+            send_gameroom_chat(client, {'game_finished': "", 'chat': f"* Game over! It was a draw!! *\n"})
+        else:
+            send_gameroom_chat(client, {'game_finished': "", 'chat': f"* Game over! winner: {game.winner} *\n"})
 
 
 

@@ -28,11 +28,6 @@ class User:
         self.player_role = player_role # this will be either "X" or "O"
 
 
-# class TicTacToe:
-#     def __init__(self) -> None:
-#         self.gameboard = [ ["", "", ""], ["", "", ""], ["", "", ""] ] # array of game board slot states.
-
-
 def establish_connection():
     username_success = False
     client_socket.connect((HOST, PORT))
@@ -100,7 +95,7 @@ def write():
     while True:
         message = input("") # get chat message input
 
-        if (client_playing_game): # if client is playing a game, we process the game moves
+        if (client_playing_game): # if client is playing a game, we send as game moves
             send_server_json({'game_move': message})
             continue
 

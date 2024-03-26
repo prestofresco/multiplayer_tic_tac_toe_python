@@ -21,16 +21,6 @@ class TicTacToe:
         help_menu += "-------------------------------------------------------------------------------------\n"
         return help_menu
 
-    # send a json object to a single client
-    def send_client_json(self, client, message):
-        message = json.dumps(message) # serialized json
-        client.sendall(message.encode('utf-8'))
-
-    # send a json object to a single client
-    def send_both_clients_json(self, message):
-        message = json.dumps(message) # serialized json
-        self.client1['client_socket'].sendall(message.encode('utf-8'))
-        self.client2['client_socket'].sendall(message.encode('utf-8'))
 
     # player 'X' goes on even turns, 'O' on odd turns.
     def get_turn(self):
@@ -41,23 +31,21 @@ class TicTacToe:
             self.turn = 'O'
             return self.turn
         
-    
+    # returns the client socket of the client whose turn it is currently.
     def get_client_by_turn(self):
         if (self.client1['role'] == self.get_turn()):
             return self.client1['client_socket']
         else:
             return self.client2['client_socket']
         
+    # get the dictionary obj of the matching client socket
     def get_matching_client_dict(self, client):
         if self.client1['client_socket'] == client:
             return self.client1 
         else:
             return self.client2
  
-            
-    def handle_game_move(self):
-        pass
-
+    # returns a formatted string representation of the current game board
     def get_game_board(self):
         game_board = f"\n    0 ~ 1 ~ 2  \n"
         game_board += f"  -------------\n"
@@ -67,9 +55,10 @@ class TicTacToe:
         game_board += f"~ -------------\n"
         game_board += f"2 | {self.gameboard[2][0]} | {self.gameboard[2][1]} | {self.gameboard[2][2]} |\n"
         game_board += f"  -------------\n"
-        # self.send_both_clients_json({'chat': game_board})
         return game_board
 
+    # check if a win exists on the current gameboard. sets the winner if a win is found. 
+    # returns true if there is a win (or draw), false if no win. 
     def check_winner(self):
         # check for row wins
         for row in self.gameboard:
@@ -89,7 +78,7 @@ class TicTacToe:
             self.winner = self.gameboard[0][2]
             return True # found a win
         # check for a draw
-        if self.move_count == 8:
+        if self.move_count == 9:
             self.draw = True
             return True # found a draw
         
@@ -113,10 +102,15 @@ class TicTacToe:
         # now check for empty spot
         return self.gameboard[int(move[0])][int(move[1])] == " " # returns true if this spot is empty
 
+    # method to add a move to the gameboard
     def add_move(self, move, client):
         client_dict = self.get_matching_client_dict(client)
         client_role = client_dict['role']
         move = move.split(',') # get the two moves as a list
         # set the move on the gameboard with the client's game piece
         self.gameboard[int(move[0])][int(move[1])] = client_role
+
+    # returns boolean state of draw
+    def is_draw(self):
+        return self.draw
 
