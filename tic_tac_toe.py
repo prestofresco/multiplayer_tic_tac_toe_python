@@ -18,7 +18,7 @@ class TicTacToe:
         help_menu += "Enter the coordinates of the move you would like to make.\n"
         help_menu += "Format: 'row, column'\n"
         help_menu += "Example: '1,2'\n"
-        help_menu += "-------------------------------------------------------------------------------------\n"
+        help_menu += "----------------------------------------------------------------------------------------\n"
         return help_menu
 
 

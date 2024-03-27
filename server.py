@@ -31,6 +31,13 @@ def remove_client(client, username):
     clients.remove(user_to_remove)
     users.remove(username)
 
+# finish game, remove clients from their gameroom, move them back to the chatroom 
+def finish_game(client1, client2):
+    for clients in client_games:
+        if client1 in clients or client2 in clients:
+            client_games.remove(clients)
+
+
 # send a chat message to all online users
 def send_chat_all(message):
     for client in clients:
@@ -73,7 +80,12 @@ def get_active_game_by_client(client):
 
 # Displays all active users. This is sent to a single client. 
 def display_active_users(client):
-    users_msg = f"\n** Users online: ({len(users)}) ** \n-------------------------------------------------------------------------------------\n{users}\n"
+    users_msg = f"\n** Users in chat: ({len(users)}) ** \n-------------------------------------------------------------------------------------\n{users}\n"
+    users_msg += "-------------------------------------------------------------------------------------"
+    game_players = []
+    for clients in client_games:
+        game_players.append([get_username_by_client(clients[0]), get_username_by_client(clients[1])])
+    users_msg += f"\n** Games in progress: ({len(client_games)}) ** \n-------------------------------------------------------------------------------------\n{game_players}\n"
     users_msg += "-------------------------------------------------------------------------------------\n"
     all_users_msg = {'chat': users_msg}
     send_single_client_json(client, all_users_msg)
@@ -172,7 +184,6 @@ def handle_game_move(client, move):
     game = get_active_game_by_client(client)
     if not game.check_winner():
         curr_client_turn = game.get_client_by_turn()
-        print(get_username_by_client(curr_client_turn), "turn", "count:", game.move_count)
 
         if client == curr_client_turn:
             # it is their turn, so process the move.
@@ -183,14 +194,16 @@ def handle_game_move(client, move):
                 game.move_count += 1 # increment the turn 
                 # send updated game boards.
                 send_gameroom_chat(client, {'chat': f"\n'{get_username_by_client(curr_client_turn)}' played: {move}\n{game.get_game_board()}"})
-                time.sleep(0.1)
+                time.sleep(0.2)
                 # check for win now
                 if game.check_winner():
                     # send the clients game finished indicator, and a winner message.
                     if (game.is_draw()): # check for draw
-                        send_gameroom_chat(client, {'game_finished': "", 'chat': f"* Game over! It was a draw!! *\n"})
+                        send_gameroom_chat(client, {'game_finished': "", 'chat': f"* Game over! It was a draw!! *\n* You are back in the chatroom now!"})
+                        finish_game(game.client1['client_socket'], game.client2['client_socket'])
                     else:
-                        send_gameroom_chat(client, {'game_finished': "", 'chat': f"* Game over! winner: {game.winner} *\n"})
+                        send_gameroom_chat(client, {'game_finished': "", 'chat': f"* Game over! winner: {game.winner} *\n* You are back in the chatroom now!"})
+                        finish_game(game.client1['client_socket'], game.client2['client_socket'])
                 else: # no winner yet
                     # get the next client who's turn it is to play, and send them the game move menu.
                     next_client_turn = game.get_client_by_turn()
@@ -208,9 +221,11 @@ def handle_game_move(client, move):
     else: # found a winner
          # send the clients game finished indicator, and a winner message.
         if (game.is_draw()): # check for draw
-            send_gameroom_chat(client, {'game_finished': "", 'chat': f"* Game over! It was a draw!! *\n"})
+            send_gameroom_chat(client, {'game_finished': "", 'chat': f"* Game over! It was a draw!! *\n* You are back in the chatroom now!"})
+            finish_game(game.client1['client_socket'], game.client2['client_socket'])
         else:
-            send_gameroom_chat(client, {'game_finished': "", 'chat': f"* Game over! winner: {game.winner} *\n"})
+            send_gameroom_chat(client, {'game_finished': "", 'chat': f"* Game over! winner: {game.winner} *\n* You are back in the chatroom now!"})
+            finish_game(game.client1['client_socket'], game.client2['client_socket'])
 
 
 
