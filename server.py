@@ -31,6 +31,10 @@ def remove_client(client, username):
     clients.remove(user_to_remove)
     users.remove(username)
 
+# move them into their own gameroom, which also holds their game object.
+def move_clients_to_gameroom(client1, client2, game):
+    client_games.append([client1, client2, game])
+
 # finish game, remove clients from their gameroom, move them back to the chatroom 
 def finish_game(client1, client2):
     for clients in client_games:
@@ -38,9 +42,12 @@ def finish_game(client1, client2):
             client_games.remove(clients)
 
 
-# send a chat message to all online users
+# send a chat message to all online users in the main chatroom.
 def send_chat_all(message):
     for client in clients:
+        # check if the client is in a gameroom, ignore them if they are.
+        if any(client['client_socket'] in game for game in client_games):
+            continue
         chat_msg = {'chat': message}
         chat_msg = json.dumps(chat_msg) # serialized json
         client['client_socket'].sendall(chat_msg.encode('utf-8'))
@@ -162,10 +169,8 @@ def start_gameplay(client1, client2):
     time.sleep(0.1)
     # create the new game instance
     this_game = TicTacToe(client1, get_username_by_client(client1), client2, get_username_by_client(client2))
-    # TODO: remove clients from chatroom and move them to their own game room
-    # remove_client(client1)
-    # remove_client(client2)
-    client_games.append([client1, client2, this_game])
+    # move the clients into their own game room
+    move_clients_to_gameroom(client1, client2, this_game)
 
     # notify them of game starting, and print game board
     send_single_client_json(client1, {'chat': f"\nGame with '{get_username_by_client(client2)}' starting! \n{this_game.get_game_board()}"})
@@ -229,14 +234,14 @@ def handle_game_move(client, move):
 
 
 
-
+# finds a pending game request.
 def find_game_request(client):
     for clients in pending_game_requests:
         if client in clients:
             return clients
 
 
-
+# handle new client connections.
 def receive_new_client():
     while True:
         client, address = server_socket.accept()
@@ -261,7 +266,7 @@ def receive_new_client():
                 send_single_client_json(client, {'fail': ""})
 
 
-
+# verify that a username is not already in use.
 def verify_username(username):
     if not users: 
         return True
@@ -307,8 +312,6 @@ def handle_client(client):
 def main():
     establish_connection()
     receive_new_client()
-    
-
 
 if __name__ == "__main__":
     main()

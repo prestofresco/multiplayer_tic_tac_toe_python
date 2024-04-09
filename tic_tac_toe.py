@@ -13,7 +13,7 @@ class TicTacToe:
         self.draw = False # boolean for if there is a draw, no winner
 
     def get_game_move_menu(self):
-        help_menu = f"--------------------------------- YOUR TURN ({self.turn}) -----------------------------------------\n"
+        help_menu = f"--------------------------------- YOUR TURN ({self.turn}) ----------------------------------------\n"
         help_menu += f"You are player: '{self.turn}'\n"
         help_menu += "Enter the coordinates of the move you would like to make.\n"
         help_menu += "Format: 'row, column'\n"
