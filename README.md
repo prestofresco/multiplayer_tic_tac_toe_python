@@ -18,4 +18,11 @@ Type a message to send a chat to all other active users.\
 'logout' - logs the user out of the chatroom and exits the application.\
 ------------------------------------------------------------------------------\
 
+Once two players have agreed to play a tic-tac-toe game, they are moved into their own game room.\
+They may then play the game and chat privately in between their turns. 
+
+------------------------------------------------------------------------------\
+Tic Tac Toe Commands / Usage:\
+Move input format: 'row, column'\
+------------------------------------------------------------------------------
 
