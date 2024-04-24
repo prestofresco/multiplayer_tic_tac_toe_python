@@ -1,6 +1,6 @@
 import tkinter
 import socket
-import sys
+import os
 import threading
 import json
 
@@ -11,13 +11,11 @@ client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 user = None
 help_menu = "\n--------------------------------- HELP MENU -----------------------------------------\n"
 help_menu += "Type a message to chat with other players.\n"
-help_menu += "If you would like to start a game with another player type: 'play' in chat.\n"
-help_menu += "To display the help menu type: 'help' in chat.\n"
-help_menu += "To display active users type: 'users' in chat.\n"
+help_menu += "'play' To start a game with another player type: 'play' in chat.\n"
+help_menu += "'help' To display the help menu in chat.\n"
+help_menu += "'users' To display active users in chat.\n"
+help_menu += "'logout' To logout and disconnect from the chat.\n"
 help_menu += "-------------------------------------------------------------------------------------\n"
-# declare the threads globally for access in methods
-write_thread = None
-receive_thread = None
 
 client_playing_game = False
 
@@ -47,12 +45,12 @@ def establish_connection():
         else:
             print(f"** Username: '{username}' is invalid or already taken. Please choose another username.")
 
-
+# send the server a json message
 def send_server_json(json_msg):
     json_msg = json.dumps(json_msg)
     client_socket.sendall(json_msg.encode('utf-8'))
 
-
+# method to initiate requesting a game to be started.
 def initiate_game_start():
     while True:
         message = input("")
@@ -68,7 +66,7 @@ def initiate_game_start():
             send_server_json(username_msg)
             break
 
-
+# receive thread method
 def receive():
     while True:
         try:
@@ -84,13 +82,17 @@ def receive():
                 client_playing_game = True
             if 'game_finished' in message:
                 client_playing_game = False
+            if 'logout_success' in message:
+                print(message['logout_success'])
+                client_socket.close()
+                os._exit(1)
 
         except Exception as error:
             print("An error occurred!", error, message)
             client_socket.close()
             break
 
-
+# write thread method
 def write():
     while True:
         message = input("") # get chat message input
@@ -112,6 +114,8 @@ def write():
         elif message.lower() == 'accept' or message.lower() == 'decline':
             send_server_json({'gameresponse': message})
 
+        elif message.lower() == 'logout':
+            send_server_json({'logout': ""})
 
         else: # just a chat message
             message = f'{user.username}: {message}'
@@ -124,7 +128,6 @@ def write():
 # ------------------ MAIN --------------------
 def main():
     establish_connection()
-    global write_thread, receive_thread
     receive_thread = threading.Thread(target=receive)
     write_thread = threading.Thread(target=write)
     receive_thread.start() # start the receive thread

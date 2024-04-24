@@ -298,6 +298,13 @@ def handle_client(client):
 
             elif 'game_move' in message:
                 handle_game_move(client, message)
+
+            elif 'logout' in message:
+                username = get_username_by_client(client)
+                remove_client(client, username)
+                send_single_client_json(client, {'logout_success': '* You have been logged out. Goodbye! *'})
+                send_chat_all(f"* '{username}' logged out! *")
+                break
                 
 
         except: # exception or disconnect, remove the client and close connection.
