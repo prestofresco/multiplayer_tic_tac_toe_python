@@ -24,6 +24,6 @@ They may then play the game and chat privately in between their turns.\
 ------------------------------------------------------------------------------\
 Tic Tac Toe Commands / Usage:\
 Move input format: 'row, column'\
-game inputs are checked for validity.
+game move inputs are checked for validity.\
 ------------------------------------------------------------------------------\
 
