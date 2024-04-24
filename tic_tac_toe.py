@@ -1,6 +1,6 @@
 
-import socket
-import json
+# Tic Tac Toe game class
+# handles the game logic on the server for a game between two clients.
 
 class TicTacToe:
     def __init__(self, client1_sock, client1_username, client2_sock, client2_username) -> None:

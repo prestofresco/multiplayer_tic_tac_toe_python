@@ -1,5 +1,4 @@
 import socket
-import sys
 import threading
 import json
 from tic_tac_toe import TicTacToe
@@ -105,6 +104,7 @@ def send_user_game_request(client, user_who_requested):
     pending_game_requests.append(game_request)
 
 
+# handle sending a request to another client to start a game.
 def handle_game_start(client):
     game_instructions = "\nGame waiting to start! Please type the username of the player you would like to play with\n"
     game_instructions += "Type 'users' to see a list of active users, or 'cancel' to go back to the chatroom.\n"
