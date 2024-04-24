@@ -19,10 +19,10 @@ Type a message to send a chat to all other active users.\
 ------------------------------------------------------------------------------\
 
 Once two players have agreed to play a tic-tac-toe game, they are moved into their own game room.\
-They may then play the game and chat privately in between their turns. 
+They may then play the game and chat privately in between their turns.\
 
 ------------------------------------------------------------------------------\
-Tic Tac Toe Commands / Usage:\
-Move input format: 'row, column'\
-------------------------------------------------------------------------------
+Tic Tac Toe Commands / Usage:
+Move input format: 'row, column'
+------------------------------------------------------------------------------\
 
